@@ -33,6 +33,13 @@ public sealed class AppServices : IAppServices, IDisposable
     private int _historySeconds;
 
     public AppServices(string dataDir, SettingsStore store, AudioEngine engine, LoopbackRecorder recorder, IDialogs dialogs)
+        : this(dataDir, store, engine, recorder, dialogs, KeySender.Down, KeySender.Up)
+    {
+    }
+
+    /// <summary>Test seam: <paramref name="keyDown"/>/<paramref name="keyUp"/> replace the real SendInput calls.</summary>
+    internal AppServices(string dataDir, SettingsStore store, AudioEngine engine, LoopbackRecorder recorder, IDialogs dialogs,
+        Action<int> keyDown, Action<int> keyUp)
     {
         _dataDir = dataDir;
         _store = store;
@@ -40,7 +47,7 @@ public sealed class AppServices : IAppServices, IDisposable
         _recorder = recorder;
         Dialogs = dialogs;
         _playback = new PlaybackService(engine);
-        _ptt = new PttController(new StopwatchClock(), () => KeySender.Down(_pttVk), () => KeySender.Up(_pttVk), TimeSpan.FromMilliseconds(200));
+        _ptt = new PttController(new StopwatchClock(), () => keyDown(_pttVk), () => keyUp(_pttVk), TimeSpan.FromMilliseconds(200));
         _playback.PlaybackStarted += _ptt.OnPlaybackStarted;
         _playback.PlaybackEnded += _ptt.OnPlaybackEnded;
         _pttTimer = new Timer(_ => _ptt.Tick(), null, 20, 20);
@@ -72,9 +79,15 @@ public sealed class AppServices : IAppServices, IDisposable
         _engine.EffectEnabled = settings.EffectEnabled;
 
         // The PTT key is held without modifiers: Discord binds push-to-talk to a single key.
-        _ptt.Enabled = false;
-        _pttVk = settings.PttKey?.VirtualKey ?? 0;
-        _ptt.Enabled = settings.PttEnabled && _pttVk != 0;
+        // Reconfigure only when it actually changed, so moving a volume slider mid-sound keeps the key held.
+        var vk = settings.PttKey?.VirtualKey ?? 0;
+        var enabled = settings.PttEnabled && vk != 0;
+        if (vk != _pttVk || enabled != _ptt.Enabled)
+        {
+            _ptt.Enabled = false;   // releases the old key if it is down
+            _pttVk = vk;
+            _ptt.Enabled = enabled;
+        }
 
         if (settings.MicDeviceId != _micId || settings.MonitorDeviceId != _monitorId)
         {
