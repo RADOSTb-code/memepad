@@ -31,7 +31,8 @@ public sealed class Mixer(AudioFormat format, int maxVoices = 16)
         get { lock (_gate) return _voices.Count; }
     }
 
-    internal IReadOnlyList<Guid> ActiveSoundIds
+    /// <summary>Ids of the sounds currently playing (a snapshot; allocates, so call from the UI, not the audio thread).</summary>
+    public IReadOnlyList<Guid> ActiveSoundIds
     {
         get { lock (_gate) return _voices.Select(v => v.SoundId).ToList(); }
     }
