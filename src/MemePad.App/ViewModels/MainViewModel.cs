@@ -79,6 +79,31 @@ public sealed partial class MainViewModel : ObservableObject
     };
 
     public bool IsCableMissing => EngineStatus == EngineStatus.NoCable;
+
+    public const string CableDownloadUrl = "https://vb-audio.com/Cable/";
+
+    /// <summary>One-time hint to pick CABLE Output in Discord, shown the first time the cable is seen.</summary>
+    [ObservableProperty]
+    private bool _showDiscordTip;
+
+    partial void OnEngineStatusChanged(EngineStatus value)
+    {
+        if (value == EngineStatus.Running && !_settings.CableTipShown) ShowDiscordTip = true;
+    }
+
+    [RelayCommand]
+    private void DismissTip()
+    {
+        ShowDiscordTip = false;
+        _settings.CableTipShown = true;
+        _services.Save(_settings);
+    }
+
+    [RelayCommand]
+    private void RetryCable() => _services.RetryAudio();
+
+    [RelayCommand]
+    private void DownloadCable() => _services.OpenUrl(CableDownloadUrl);
     public string StopHotkeyText => _settings.StopHotkey?.ToString() ?? "";
     public AppSettings Settings => _settings;
 

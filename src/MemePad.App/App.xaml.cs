@@ -24,6 +24,7 @@ public partial class App : Application
             : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MemePad");
 
     private Mutex? _singleInstance;
+    private bool _ownsMutex;
     private DeviceCatalog? _catalog;
     private AudioEngine? _engine;
     private LoopbackRecorder? _recorder;
@@ -45,7 +46,18 @@ public partial class App : Application
             return;
         }
 
-        _singleInstance = new Mutex(initiallyOwned: true, "MemePad.SingleInstance", out var isFirst);
+        // After "Restart as administrator" the old instance needs a moment to exit and free the mutex.
+        _singleInstance = new Mutex(initiallyOwned: false, "MemePad.SingleInstance");
+        bool isFirst;
+        try
+        {
+            isFirst = _singleInstance.WaitOne(e.Args.Contains("--after-restart") ? TimeSpan.FromSeconds(8) : TimeSpan.Zero);
+        }
+        catch (AbandonedMutexException)
+        {
+            isFirst = true;   // previous instance crashed; we own it now
+        }
+        _ownsMutex = isFirst;
         _store = new SettingsStore(DataDir);
         _settings = _store.Load();
         L.Use(_settings.Language);
@@ -65,6 +77,12 @@ public partial class App : Application
         _recorder = new LoopbackRecorder(_settings.HistorySeconds);
         _services = new AppServices(DataDir, _store, _engine, _recorder, dialogs);
         dialogs.Playback = _services.Playback;
+        var catalog = _catalog;
+        var speech = new SpeechSynth();
+        dialogs.Microphones = () => catalog.Microphones().Select(d => new DeviceOption(d.Id, d.Name)).ToList();
+        dialogs.Outputs = () => catalog.Outputs().Select(d => new DeviceOption(d.Id, d.Name)).ToList();
+        dialogs.Voices = speech.Voices;
+        dialogs.RestartElevated = ExitApp;
 
         var vm = new MainViewModel(_settings, _services);
         _engine.StatusChanged += s => Dispatcher.BeginInvoke(() => vm.EngineStatus = s);
@@ -138,6 +156,7 @@ public partial class App : Application
         _recorder?.Dispose();
         _engine?.Dispose();
         _catalog?.Dispose();
+        if (_ownsMutex) _singleInstance?.ReleaseMutex();
         _singleInstance?.Dispose();
         base.OnExit(e);
     }

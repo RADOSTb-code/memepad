@@ -41,6 +41,10 @@ public sealed class MainViewModelTests : IDisposable
         public DecodeResult Speak(string text, AppSettings settings) => new(null, "no tts in tests");
         public string? SaveSpeechFile(string text, AppSettings settings) => null;
         public string? SaveClip() => null;
+        public int Retries;
+        public readonly List<string> OpenedUrls = [];
+        public void RetryAudio() => Retries++;
+        public void OpenUrl(string url) => OpenedUrls.Add(url);
     }
 
     private sealed class NoDialogs : IDialogs
@@ -158,6 +162,40 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Equal("One", vm.SelectedPage!.Name);
         vm.Execute(GlobalAction.PrevPage);
         Assert.Equal("Two", vm.SelectedPage!.Name);
+    }
+
+    [Fact]
+    public void Discord_tip_shows_once_after_cable_appears()
+    {
+        var settings = new AppSettings();
+        var vm = new MainViewModel(settings, _services);
+
+        vm.EngineStatus = EngineStatus.NoCable;
+        Assert.True(vm.IsCableMissing);
+        Assert.False(vm.ShowDiscordTip);
+
+        vm.EngineStatus = EngineStatus.Running;
+        Assert.True(vm.ShowDiscordTip);
+
+        vm.DismissTipCommand.Execute(null);
+        Assert.False(vm.ShowDiscordTip);
+        Assert.True(settings.CableTipShown);
+
+        vm.EngineStatus = EngineStatus.Reconnecting;
+        vm.EngineStatus = EngineStatus.Running;
+        Assert.False(vm.ShowDiscordTip);
+    }
+
+    [Fact]
+    public void Cable_banner_commands_retry_and_open_download_page()
+    {
+        var vm = new MainViewModel(new AppSettings(), _services);
+
+        vm.RetryCableCommand.Execute(null);
+        vm.DownloadCableCommand.Execute(null);
+
+        Assert.Equal(1, _services.Retries);
+        Assert.Equal(["https://vb-audio.com/Cable/"], _services.OpenedUrls);
     }
 
     [Fact]

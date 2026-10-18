@@ -53,4 +53,10 @@ public interface IAppServices
 
     /// <summary>Saves the last N seconds of system output as a WAV file; returns its path or null.</summary>
     string? SaveClip();
+
+    /// <summary>Reopens the audio devices now (the "Check again" button after installing the cable).</summary>
+    void RetryAudio();
+
+    /// <summary>Opens a link in the default browser; only called from a user click.</summary>
+    void OpenUrl(string url);
 }

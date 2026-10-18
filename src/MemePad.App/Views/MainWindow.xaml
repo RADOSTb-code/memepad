@@ -216,8 +216,35 @@
             <Button Grid.Column="2" Style="{StaticResource FlatButton}" Margin="4,0,0,0" Content="{x:Static loc:L.ToLibrary}" Command="{Binding SaveSpeechCommand}" />
         </Grid>
 
-        <!-- Sound list -->
-        <Grid Grid.Row="2" Margin="12,4,12,8">
+        <!-- Sound list, with the cable onboarding and the one-time Discord tip above it -->
+        <DockPanel Grid.Row="2" Margin="12,4,12,8">
+            <Border DockPanel.Dock="Top" Margin="12,8,12,8" Padding="18,16" CornerRadius="12" Background="{StaticResource Surface}"
+                    Visibility="{Binding IsCableMissing, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="{x:Static loc:L.CableTitle}" FontSize="15" FontWeight="SemiBold" />
+                    <TextBlock Text="{x:Static loc:L.CableBody}" Foreground="#C9CCD4" TextWrapping="Wrap" Margin="0,8,0,0" />
+                    <TextBlock Text="{x:Static loc:L.CablePreviewNote}" Foreground="{StaticResource Muted}" TextWrapping="Wrap" Margin="0,6,0,0" FontSize="12" />
+                    <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                        <Button Style="{StaticResource OutlineButton}" Content="{x:Static loc:L.CableDownload}" Command="{Binding DownloadCableCommand}" />
+                        <Button Style="{StaticResource FlatButton}" Content="{x:Static loc:L.CableRetry}" Command="{Binding RetryCableCommand}" Margin="8,0,0,0" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <Border DockPanel.Dock="Top" Margin="12,8,12,8" Padding="18,14" CornerRadius="12" Background="{StaticResource Surface}"
+                    BorderBrush="{StaticResource Accent}" BorderThickness="1"
+                    Visibility="{Binding ShowDiscordTip, Converter={StaticResource BoolToVis}}">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Style="{StaticResource OutlineButton}" Content="{x:Static loc:L.Got}" Command="{Binding DismissTipCommand}"
+                            VerticalAlignment="Center" Margin="16,0,0,0" />
+                    <StackPanel>
+                        <TextBlock Text="{x:Static loc:L.DiscordTipTitle}" FontWeight="SemiBold" />
+                        <TextBlock Text="{x:Static loc:L.DiscordTip}" Foreground="#C9CCD4" TextWrapping="Wrap" Margin="0,6,0,0" />
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+        <Grid>
             <ListBox x:Name="SoundList" ItemsSource="{Binding Rows}" ItemTemplate="{StaticResource SoundRowTemplate}"
                      ItemContainerStyle="{StaticResource SoundRow}" Background="Transparent" BorderThickness="0"
                      Foreground="{StaticResource Text}" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -252,6 +279,7 @@
                 </TextBlock.Style>
             </TextBlock>
         </Grid>
+        </DockPanel>
 
         <!-- Footer -->
         <Border Grid.Row="3" Background="{StaticResource Footer}" BorderBrush="{StaticResource Line}" BorderThickness="0,1,0,0">

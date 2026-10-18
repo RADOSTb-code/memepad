@@ -18,11 +18,22 @@ public sealed class Dialogs : IDialogs
 
     public string? AskText(string title, string initial) => TextPromptWindow.Ask(VisibleOwner, title, initial);
 
-    public HotkeyCapture? CaptureHotkey(string title, Func<Hotkey, string?> conflictCheck)
+    /// <summary>Device and voice lists for the settings window.</summary>
+    public Func<IReadOnlyList<DeviceOption>>? Microphones { get; set; }
+    public Func<IReadOnlyList<DeviceOption>>? Outputs { get; set; }
+    public Func<IReadOnlyList<string>>? Voices { get; set; }
+
+    /// <summary>Called after settings are saved when the user chose "Restart as administrator".</summary>
+    public Action? RestartElevated { get; set; }
+
+    public HotkeyCapture? CaptureHotkey(string title, Func<Hotkey, string?> conflictCheck) =>
+        CaptureHotkey(title, conflictCheck, VisibleOwner);
+
+    private static HotkeyCapture? CaptureHotkey(string title, Func<Hotkey, string?> conflictCheck, Window? owner)
     {
         // Pause global hotkeys so pressing an already-bound combination does not also play its sound.
         using var _ = HotkeyGate.Suspend();
-        var dialog = new HotkeyCaptureDialog(title, conflictCheck) { Owner = VisibleOwner };
+        var dialog = new HotkeyCaptureDialog(title, conflictCheck) { Owner = owner };
         return dialog.ShowDialog() == true ? dialog.Result : null;
     }
 
@@ -37,7 +48,26 @@ public sealed class Dialogs : IDialogs
         return saved;
     }
 
-    public bool EditSettings(AppSettings settings) => false;
+    public bool EditSettings(AppSettings settings)
+    {
+        SettingsWindow? window = null;
+        var vm = new SettingsViewModel(
+            settings,
+            Microphones?.Invoke() ?? [],
+            Outputs?.Invoke() ?? [],
+            Voices?.Invoke() ?? [],
+            title => CaptureHotkey(title, _ => null, window));
+        window = new SettingsWindow(vm) { Owner = VisibleOwner };
+        if (window.ShowDialog() != true) return false;
+
+        vm.ApplyTo(settings);
+        if (window.RestartRequested && RestartElevated is { } restart)
+        {
+            // Let the caller save first, then exit so the elevated copy can take over.
+            Application.Current.Dispatcher.BeginInvoke(restart);
+        }
+        return true;
+    }
 
     private Window? VisibleOwner => Owner is { IsVisible: true } ? Owner : null;
 }

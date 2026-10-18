@@ -38,6 +38,9 @@ public sealed class AppSettings
     public string? TtsVoice { get; set; }
     public int TtsRate { get; set; }
 
+    /// <summary>True once the "pick CABLE Output in Discord" tip was shown after the cable appeared.</summary>
+    public bool CableTipShown { get; set; }
+
     /// <summary>UI language code ("ru", "en"); null follows the system.</summary>
     public string? Language { get; set; }
 

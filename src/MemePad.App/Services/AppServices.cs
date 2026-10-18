@@ -108,6 +108,10 @@ public sealed class AppServices : IAppServices, IDisposable
 
     public void RestartRecorder() => _recorder.Restart();
 
+    public void RetryAudio() => _engine.Start(_micId, _monitorId);
+
+    public void OpenUrl(string url) => Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+
     public void Dispose()
     {
         _pttTimer.Dispose();
