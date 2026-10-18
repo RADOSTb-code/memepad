@@ -9,11 +9,14 @@ namespace MemePad.App.Services;
 public sealed class PlaybackService : IPlaybackService, IDisposable
 {
     private readonly AudioEngine _engine;
+    private readonly SynchronizationContext? _ui;
     private Mixer _mixer;
 
+    /// <summary>Create on the UI thread: <see cref="FormatChanged"/> is delivered through that thread's context.</summary>
     public PlaybackService(AudioEngine engine)
     {
         _engine = engine;
+        _ui = SynchronizationContext.Current;
         _mixer = engine.Mixer;
         Subscribe(_mixer);
         engine.MixFormatChanged += OnMixFormatChanged;
@@ -44,7 +47,10 @@ public sealed class PlaybackService : IPlaybackService, IDisposable
         Unsubscribe(_mixer);
         _mixer = _engine.Mixer;
         Subscribe(_mixer);
-        FormatChanged?.Invoke();
+
+        // The engine reports this from its reconnect timer; listeners update UI-bound collections.
+        if (_ui is null) FormatChanged?.Invoke();
+        else _ui.Post(_ => FormatChanged?.Invoke(), null);
     }
 
     private void Subscribe(Mixer m)
