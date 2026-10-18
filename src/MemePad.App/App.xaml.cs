@@ -64,6 +64,7 @@ public partial class App : Application
         _engine = new AudioEngine(_catalog);
         _recorder = new LoopbackRecorder(_settings.HistorySeconds);
         _services = new AppServices(DataDir, _store, _engine, _recorder, dialogs);
+        dialogs.Playback = _services.Playback;
 
         var vm = new MainViewModel(_settings, _services);
         _engine.StatusChanged += s => Dispatcher.BeginInvoke(() => vm.EngineStatus = s);
@@ -102,6 +103,7 @@ public partial class App : Application
         _input.Input += ev =>
         {
             var actions = matcher.OnInput(ev);
+            if (HotkeyGate.IsSuspended) return false;
             if (actions.Count == 0) return false;
             Dispatcher.BeginInvoke(() =>
             {

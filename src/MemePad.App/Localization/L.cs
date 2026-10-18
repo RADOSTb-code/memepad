@@ -50,5 +50,17 @@ public static class L
     public static string ClipTitle => T("Clip {0:HH:mm:ss}", "Клип {0:HH:mm:ss}");
     public static string TrayOpen => T("Open", "Открыть");
     public static string TrayExit => T("Exit", "Выход");
+    public static string EditTitle => T("Edit sound", "Редактирование звука");
+    public static string TrimStart => T("Start", "Начало");
+    public static string TrimEnd => T("End", "Конец");
+    public static string Volume => T("Volume", "Громкость");
+    public static string Preview => T("Preview", "Прослушать");
+    public static string Save => T("Save", "Сохранить");
+    public static string Cancel => T("Cancel", "Отмена");
+    public static string HotkeyTitle => T("Hotkey for “{0}”", "Клавиша для «{0}»");
+    public static string HotkeyPrompt => T("Press a key combination or mouse button 4/5", "Нажмите сочетание клавиш или кнопку мыши 4/5");
+    public static string HotkeyHelp => T("Esc — cancel · Backspace — remove", "Esc — отмена · Backspace — снять");
+    public static string HotkeyConflict => T("Already assigned to “{0}”. Reassign?", "Уже назначено на «{0}». Переназначить?");
+    public static string Reassign => T("Reassign", "Переназначить");
     public static string AlreadyRunning => T("MemePad is already running (see the tray).", "MemePad уже запущен (смотрите в трее).");
 }
